@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import "./CheckBox.css"
 
 const winningLines = [
@@ -24,9 +24,11 @@ const calculateWinner = (squares) => {
 const TicTacToe = () => {
   const [board, setBoard] = useState(Array(9).fill(null))
   const [xIsNext, setXIsNext] = useState(true)
+  const [gameMode, setGameMode] = useState('human')
 
   const handleClick = (index) => {
     if (board[index] || calculateWinner(board)) return
+    if (gameMode === 'computer' && !xIsNext) return
 
     const nextBoard = board.slice()
     nextBoard[index] = xIsNext ? 'X' : 'O'
@@ -34,9 +36,36 @@ const TicTacToe = () => {
     setXIsNext(!xIsNext)
   }
 
+  const playComputerMove = () => {
+    const availableSquares = board
+      .map((value, index) => (value === null ? index : null))
+      .filter((index) => index !== null)
+
+    if (!availableSquares.length) return
+
+    const computerIndex = availableSquares[Math.floor(Math.random() * availableSquares.length)]
+    const nextBoard = board.slice()
+    nextBoard[computerIndex] = 'O'
+    setBoard(nextBoard)
+    setXIsNext(true)
+  }
+
+  useEffect(() => {
+    const winner = calculateWinner(board)
+    if (gameMode === 'computer' && !xIsNext && !winner) {
+      const timeout = setTimeout(playComputerMove, 300)
+      return () => clearTimeout(timeout)
+    }
+  }, [board, gameMode, xIsNext])
+
   const resetGame = () => {
     setBoard(Array(9).fill(null))
     setXIsNext(true)
+  }
+
+  const changeMode = (mode) => {
+    setGameMode(mode)
+    resetGame()
   }
 
   const winner = calculateWinner(board)
@@ -45,11 +74,27 @@ const TicTacToe = () => {
     ? `Winner: ${winner}`
     : isDraw
     ? 'Draw'
+    : gameMode === 'computer' && !xIsNext
+    ? 'Computer is moving...'
     : `Next player: ${xIsNext ? 'X' : 'O'}`
 
   return (
     <div className="container">
       <h1 className="title">Tic Tac Toe</h1>
+      <div className="mode-buttons">
+        <button
+          className={`mode-button ${gameMode === 'human' ? 'active' : ''}`}
+          onClick={() => changeMode('human')}
+        >
+          Player vs Player
+        </button>
+        <button
+          className={`mode-button ${gameMode === 'computer' ? 'active' : ''}`}
+          onClick={() => changeMode('computer')}
+        >
+          Player vs Computer
+        </button>
+      </div>
       <div className="status">{status}</div>
       <div className="board">
         {board.map((value, index) => (
